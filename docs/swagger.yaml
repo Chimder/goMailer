@@ -1,8 +1,26 @@
 basePath: /
 info:
   contact: {}
-  description: manage your gmail or temp mail
-  title: Mailer Api
+  description: Manga search
+  title: Manka Api
   version: "1.0"
-paths: {}
+paths:
+  /google/reg:
+    get:
+      consumes:
+      - application/json
+      operationId: get-user-list-manga
+      parameters:
+      - description: Reg Body
+        in: body
+        name: body
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: RegGoogleAcc
+      tags:
+      - Google
 swagger: "2.0"
