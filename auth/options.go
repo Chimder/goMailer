@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -26,18 +27,22 @@ func Encrypt(payload interface{}) (string, error) {
 
 	return tokenString, nil
 }
-func Decrypt(tokenString string) (interface{}, error) {
+
+func Decrypt(tokenString string, v interface{}) error {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("Ошибка при разборе токена: %v", err)
+		return fmt.Errorf("Ошибка при разборе токена: %v", err)
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return claims["data"], nil
+		data := claims["data"].(map[string]interface{})
+		bytes, _ := json.Marshal(data)
+		json.Unmarshal(bytes, &v)
+		return nil
 	} else {
-		return nil, fmt.Errorf("Недействительный токен")
+		return fmt.Errorf("Недействительный токен")
 	}
 }

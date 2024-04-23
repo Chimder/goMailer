@@ -6,41 +6,55 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/rs/cors"
+	_ "goMailer/docs"
+
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-//		@title			Manka Api
+//		@title			MAilere
 //		@version		1.0
-//		@description	Manga search
-//	 @BasePath	/
+//		@description	Mailer Api
+//	  @BasePath	/
 
 func main() {
-	r := http.NewServeMux()
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"http://localhost:4000", "http://localhost:3000"},
-	})
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:4000", "http://localhost:3000"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 
-	r.HandleFunc("GET /yaml", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/yaml", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "docs/swagger.yaml")
 	})
-	r.HandleFunc("GET /swag/", httpSwagger.WrapHandler)
+	r.Mount("/swag", httpSwagger.WrapHandler)
 
-	r.HandleFunc("GET /google/reg", handler.RegGoogleAcc)
-	r.HandleFunc("GET /google/delete", handler.DeleteGoogleCookie)
-	r.HandleFunc("GET /google/session", handler.GetGoogleSession)
+	googleHandler := handler.GoogleHandler{}
 
-	// router.HandleFunc("GET /manga", handlerM.Manga)
-	// router.HandleFunc("GET /manga/{name}/{chapter}", handlerM.Chapter)
+	r.Route("/google", func(r chi.Router) {
+		r.Post("/reg", googleHandler.RegGoogleAcc)
+		r.Get("/delete", googleHandler.DeleteGoogleCookie)
+		r.Get("/session", googleHandler.GetGoogleSession)
+		r.Get("/messages", googleHandler.MessagesAndContent)
+	})
+
+	r.Route("/temp", func(r chi.Router) {
+		// r.Post("/reg", googleHandler.GetGoogleSession)
+		// r.Get("/delete", googleHandler.DeleteGoogleCookie)
+		// r.Get("/session", googleHandler.GetGoogleSession)
+	})
 
 	var PORT string
 	if PORT = os.Getenv("PORT"); PORT == "" {
 		PORT = "4000"
 	}
 	server := http.Server{
-		Addr: ":" + PORT,
-		// Handler: middleware.Logging(c.Handler(router)),
-		Handler: c.Handler(r),
+		Addr:    ":" + PORT,
+		Handler: r,
 	}
 	log.Println("Listening...")
 	server.ListenAndServe()

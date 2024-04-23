@@ -1,12 +1,82 @@
 basePath: /
+definitions:
+  handler.Empty:
+    type: object
+  handler.GoogleAccount:
+    properties:
+      access_token:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      picture:
+        type: string
+      provider_account_id:
+        type: string
+      provider_id:
+        type: string
+      refresh_token:
+        type: string
+      user_id:
+        type: string
+    type: object
 info:
   contact: {}
-  description: Manga search
-  title: Manka Api
+  description: Mailer Api
+  title: MAilere
   version: "1.0"
 paths:
-  /google/reg:
+  /google/delete:
     get:
+      consumes:
+      - application/json
+      description: delete google session
+      operationId: delete google session
+      parameters:
+      - description: id
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.Empty'
+            type: array
+      summary: Delete
+      tags:
+      - Google
+  /google/messages:
+    get:
+      consumes:
+      - application/json
+      description: Get Messages and content
+      operationId: get-google-mess
+      parameters:
+      - description: id
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.Empty'
+            type: array
+      summary: Messages
+      tags:
+      - Google
+  /google/reg:
+    post:
       consumes:
       - application/json
       operationId: get-user-list-manga
@@ -19,8 +89,32 @@ paths:
           type: string
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.Empty'
+            type: array
       summary: RegGoogleAcc
+      tags:
+      - Google
+  /google/session:
+    get:
+      consumes:
+      - application/json
+      description: Get Google Session
+      operationId: get-google-session
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.GoogleAccount'
+            type: array
+      summary: Get Google Session
       tags:
       - Google
 swagger: "2.0"
