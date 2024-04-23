@@ -22,6 +22,7 @@ import (
 
 type Empty struct {
 }
+
 type Response struct {
 	MessagesData  []MessageData `json:"messagesData"`
 	NextPageToken string        `json:"nextPageToken"`
@@ -37,8 +38,10 @@ type GoogleAccount struct {
 	RefreshToken      string `json:"refreshToken,omitempty"`
 	UserId            string `json:"userId,omitempty"`
 }
+
 type GoogleHandler struct {
 }
+
 type MessageData struct {
 	MessageId       string
 	Subject         string
@@ -51,7 +54,6 @@ type MessageData struct {
 	BodyData        string
 }
 
-// @Success 200 {array} Empty
 
 // @Summary RegGoogleAcc
 // @Description
@@ -159,13 +161,14 @@ func (h *GoogleHandler) GetGoogleSession(w http.ResponseWriter, r *http.Request)
 // @Accept  json
 // @Produce  json
 // @Param  id query string true "id"
-// @Param  pageToken query string true "pageToken"
+// @Param  pageToken query string false "pageToken"
 // @Success 200 {array} Empty
 // @Router /google/messages [get]
 func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Request) {
 	pageToken := r.URL.Query().Get("pageToken")
 	ProviderId := r.URL.Query().Get("id")
 	cookieName := "googleMailer_" + ProviderId
+
 	var account GoogleAccount
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
@@ -176,19 +179,18 @@ func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Println("acc", account)
 
 	ctx := context.Background()
-
 	config := &oauth2.Config{
 		ClientID:     config.LoadEnv().GOOGLE_CLIENT_ID,
 		ClientSecret: config.LoadEnv().GOOGLE_CLIENT_SECRET,
 		Endpoint:     google.Endpoint,
 	}
-
 	token := &oauth2.Token{
 		AccessToken:  account.AccessToken,
 		RefreshToken: account.RefreshToken,
+		TokenType:    "Bearer",
+		Expiry:       time.Now(),
 	}
 
 	client := config.Client(ctx, token)
@@ -197,21 +199,19 @@ func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Reques
 		log.Fatalf("Unable to retrieve Gmail client: %v", err)
 	}
 
+	////////////////////////////////////////////////////
 	user := "me"
-	call := srv.Users.Messages.List(user).MaxResults(100)
+	call := srv.Users.Messages.List(user).MaxResults(80)
 	if pageToken != "" {
 		call.PageToken(pageToken)
 	}
-
 	rr, err := call.Do()
 	if err != nil {
 		http.Error(w, "Unable to retrieve messages: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	var messages []*gmail.Message // Slice to store retrieved messages
-
-	// Use go-async to parallelize message retrieval
+	var messages []*gmail.Message
 	task := func(m *gmail.Message) error {
 		msg, err := srv.Users.Messages.Get(user, m.Id).Do()
 		if err != nil {
@@ -220,24 +220,20 @@ func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Reques
 		messages = append(messages, msg)
 		return nil
 	}
-
+	////////////////////////////////////////////////////////////////
 	var group sync.WaitGroup
-
-	// Iterate over retrieved message IDs and spawn tasks for each
 	for _, m := range rr.Messages {
 		group.Add(1)
 		go func(m *gmail.Message) {
 			defer group.Done()
 			err := task(m)
 			if err != nil {
-				// Handle individual message retrieval errors here (optional)
 				log.Printf("Error retrieving message %s: %v", m.Id, err)
 			}
 		}(m)
 	}
-
-	group.Wait() // Wait for all tasks to finish
-
+	group.Wait() //all tasks to finish
+	/////////////////////////////////////////////////////////////////////////
 	var messagesData []MessageData
 	for _, msg := range messages {
 		headers := msg.Payload.Headers
@@ -277,15 +273,11 @@ func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Reques
 		messagesData = append(messagesData, messageData)
 	}
 
-	// w.Header().Set("Content-Type", "application/json")
-	// if err := json.NewEncoder(w).Encode(messagesData); err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// }
+	log.Println("LEEEG", len(messagesData))
 	response := Response{
 		MessagesData:  messagesData,
 		NextPageToken: rr.NextPageToken,
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

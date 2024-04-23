@@ -65,6 +65,12 @@
                         "name": "id",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "pageToken",
+                        "name": "pageToken",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -143,16 +149,225 @@
                     }
                 }
             }
+        },
+        "/temp/message": {
+            "get": {
+                "description": "get one Temp messages",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Temp"
+                ],
+                "summary": "Temp",
+                "operationId": "get-one-temp-message",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "messageId",
+                        "name": "messageId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.DetailedMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/temp/messages": {
+            "get": {
+                "description": "get all Temp messages",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Temp"
+                ],
+                "summary": "Temp",
+                "operationId": "get-temp-messages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pageToken",
+                        "name": "pageToken",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.Message"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/temp/reg": {
+            "get": {
+                "description": "get randome tempAcc",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Temp"
+                ],
+                "summary": "RegTempAcc",
+                "operationId": "get-temp-mail",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.TempAccount"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "handler.Addressee": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.DetailedMessage": {
+            "type": "object",
+            "properties": {
+                "accountId": {
+                    "type": "string"
+                },
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "bcc": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handler.Addressee"
+                    }
+                },
+                "cc": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handler.Addressee"
+                    }
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "downloadUrl": {
+                    "type": "string"
+                },
+                "flagged": {
+                    "type": "boolean"
+                },
+                "from": {
+                    "$ref": "#/definitions/handler.Addressee"
+                },
+                "hasAttachments": {
+                    "type": "boolean"
+                },
+                "html": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isDeleted": {
+                    "type": "boolean"
+                },
+                "msgid": {
+                    "type": "string"
+                },
+                "retention": {
+                    "type": "boolean"
+                },
+                "retentionDate": {
+                    "type": "string"
+                },
+                "seen": {
+                    "type": "boolean"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handler.Addressee"
+                    }
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "verifications": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "handler.Empty": {
             "type": "object"
         },
         "handler.GoogleAccount": {
             "type": "object",
             "properties": {
-                "access_token": {
+                "accessToken": {
                     "type": "string"
                 },
                 "email": {
@@ -164,17 +379,102 @@
                 "picture": {
                     "type": "string"
                 },
-                "provider_account_id": {
+                "providerAccountId": {
                     "type": "string"
                 },
-                "provider_id": {
+                "providerId": {
                     "type": "string"
                 },
-                "refresh_token": {
+                "refreshToken": {
                     "type": "string"
                 },
-                "user_id": {
+                "userId": {
                     "type": "string"
+                }
+            }
+        },
+        "handler.Message": {
+            "type": "object",
+            "properties": {
+                "accountId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "downloadUrl": {
+                    "type": "string"
+                },
+                "from": {
+                    "$ref": "#/definitions/handler.Addressee"
+                },
+                "hasAttachments": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "intro": {
+                    "type": "string"
+                },
+                "isDeleted": {
+                    "type": "boolean"
+                },
+                "msgid": {
+                    "type": "string"
+                },
+                "seen": {
+                    "type": "boolean"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handler.Addressee"
+                    }
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.TempAccount": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isDeleted": {
+                    "type": "boolean"
+                },
+                "isDisabled": {
+                    "type": "boolean"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "quota": {
+                    "type": "integer"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "used": {
+                    "type": "integer"
                 }
             }
         }

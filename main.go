@@ -34,7 +34,6 @@ func main() {
 	r.Mount("/swag", httpSwagger.WrapHandler)
 
 	googleHandler := handler.GoogleHandler{}
-
 	r.Route("/google", func(r chi.Router) {
 		r.Post("/reg", googleHandler.RegGoogleAcc)
 		r.Get("/delete", googleHandler.DeleteGoogleCookie)
@@ -42,8 +41,11 @@ func main() {
 		r.Get("/messages", googleHandler.MessagesAndContent)
 	})
 
+	tempHandler := handler.TempHandler{}
 	r.Route("/temp", func(r chi.Router) {
-		// r.Post("/reg", googleHandler.GetGoogleSession)
+		r.Get("/reg", tempHandler.RegTempEmail)
+		r.Get("/message", tempHandler.GetTempMessage)
+		r.Get("/messages", tempHandler.GetTempMessages)
 		// r.Get("/delete", googleHandler.DeleteGoogleCookie)
 		// r.Get("/session", googleHandler.GetGoogleSession)
 	})

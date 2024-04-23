@@ -1,10 +1,76 @@
 basePath: /
 definitions:
+  handler.Addressee:
+    properties:
+      address:
+        type: string
+      name:
+        type: string
+    type: object
+  handler.DetailedMessage:
+    properties:
+      accountId:
+        type: string
+      attachments:
+        items:
+          type: string
+        type: array
+      bcc:
+        items:
+          $ref: '#/definitions/handler.Addressee'
+        type: array
+      cc:
+        items:
+          $ref: '#/definitions/handler.Addressee'
+        type: array
+      createdAt:
+        type: string
+      downloadUrl:
+        type: string
+      flagged:
+        type: boolean
+      from:
+        $ref: '#/definitions/handler.Addressee'
+      hasAttachments:
+        type: boolean
+      html:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      isDeleted:
+        type: boolean
+      msgid:
+        type: string
+      retention:
+        type: boolean
+      retentionDate:
+        type: string
+      seen:
+        type: boolean
+      size:
+        type: integer
+      subject:
+        type: string
+      text:
+        type: string
+      to:
+        items:
+          $ref: '#/definitions/handler.Addressee'
+        type: array
+      updatedAt:
+        type: string
+      verifications:
+        items:
+          type: string
+        type: array
+    type: object
   handler.Empty:
     type: object
   handler.GoogleAccount:
     properties:
-      access_token:
+      accessToken:
         type: string
       email:
         type: string
@@ -12,14 +78,70 @@ definitions:
         type: string
       picture:
         type: string
-      provider_account_id:
+      providerAccountId:
         type: string
-      provider_id:
+      providerId:
         type: string
-      refresh_token:
+      refreshToken:
         type: string
-      user_id:
+      userId:
         type: string
+    type: object
+  handler.Message:
+    properties:
+      accountId:
+        type: string
+      createdAt:
+        type: string
+      downloadUrl:
+        type: string
+      from:
+        $ref: '#/definitions/handler.Addressee'
+      hasAttachments:
+        type: boolean
+      id:
+        type: string
+      intro:
+        type: string
+      isDeleted:
+        type: boolean
+      msgid:
+        type: string
+      seen:
+        type: boolean
+      size:
+        type: integer
+      subject:
+        type: string
+      to:
+        items:
+          $ref: '#/definitions/handler.Addressee'
+        type: array
+      updatedAt:
+        type: string
+    type: object
+  handler.TempAccount:
+    properties:
+      address:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      isDeleted:
+        type: boolean
+      isDisabled:
+        type: boolean
+      password:
+        type: string
+      quota:
+        type: integer
+      token:
+        type: string
+      updatedAt:
+        type: string
+      used:
+        type: integer
     type: object
 info:
   contact: {}
@@ -62,6 +184,10 @@ paths:
         in: query
         name: id
         required: true
+        type: string
+      - description: pageToken
+        in: query
+        name: pageToken
         type: string
       produces:
       - application/json
@@ -117,4 +243,77 @@ paths:
       summary: Get Google Session
       tags:
       - Google
+  /temp/message:
+    get:
+      consumes:
+      - application/json
+      description: get one Temp messages
+      operationId: get-one-temp-message
+      parameters:
+      - description: messageId
+        in: query
+        name: messageId
+        required: true
+        type: string
+      - description: id
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.DetailedMessage'
+      summary: Temp
+      tags:
+      - Temp
+  /temp/messages:
+    get:
+      consumes:
+      - application/json
+      description: get all Temp messages
+      operationId: get-temp-messages
+      parameters:
+      - description: id
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: pageToken
+        in: query
+        name: pageToken
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.Message'
+            type: array
+      summary: Temp
+      tags:
+      - Temp
+  /temp/reg:
+    get:
+      consumes:
+      - application/json
+      description: get randome tempAcc
+      operationId: get-temp-mail
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.TempAccount'
+            type: array
+      summary: RegTempAcc
+      tags:
+      - Temp
 swagger: "2.0"
