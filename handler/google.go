@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"goMailer/auth"
 	"goMailer/config"
 	"log"
@@ -53,7 +52,6 @@ type MessageData struct {
 	IsBodyWithParts bool
 	BodyData        string
 }
-
 
 // @Summary RegGoogleAcc
 // @Description
@@ -211,28 +209,27 @@ func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var messages []*gmail.Message
-	task := func(m *gmail.Message) error {
-		msg, err := srv.Users.Messages.Get(user, m.Id).Do()
-		if err != nil {
-			return fmt.Errorf("error fetching message %s: %v", m.Id, err)
-		}
-		messages = append(messages, msg)
-		return nil
-	}
 	////////////////////////////////////////////////////////////////
+	var messages []*gmail.Message
 	var group sync.WaitGroup
 	for _, m := range rr.Messages {
 		group.Add(1)
 		go func(m *gmail.Message) {
 			defer group.Done()
-			err := task(m)
+			time.Sleep(time.Nanosecond)
+			msg, err := srv.Users.Messages.Get(user, m.Id).Do()
+			if err != nil {
+				log.Printf("Error retrieving message %s: %v", m.Id, err)
+				return
+			}
+			messages = append(messages, msg)
+
 			if err != nil {
 				log.Printf("Error retrieving message %s: %v", m.Id, err)
 			}
 		}(m)
 	}
-	group.Wait() //all tasks to finish
+	group.Wait()
 	/////////////////////////////////////////////////////////////////////////
 	var messagesData []MessageData
 	for _, msg := range messages {
