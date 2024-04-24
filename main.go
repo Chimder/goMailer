@@ -46,8 +46,8 @@ func main() {
 		r.Get("/reg", tempHandler.RegTempEmail)
 		r.Get("/message", tempHandler.GetTempMessage)
 		r.Get("/messages", tempHandler.GetTempMessages)
-		// r.Get("/delete", googleHandler.DeleteGoogleCookie)
-		// r.Get("/session", googleHandler.GetGoogleSession)
+		r.Get("/session", tempHandler.GetTempSession)
+		r.Delete("/delete", tempHandler.DeleteTempSession)
 	})
 
 	var PORT string

@@ -157,6 +157,42 @@ const docTemplate = `{
                 }
             }
         },
+        "/temp/delete": {
+            "delete": {
+                "description": "delete Temp Session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Temp"
+                ],
+                "summary": "Delete Temp",
+                "operationId": "delete-temp-session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.Empty"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/temp/message": {
             "get": {
                 "description": "get one Temp messages",
@@ -265,6 +301,33 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/temp/session": {
+            "get": {
+                "description": "Get Temp Session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Temp"
+                ],
+                "summary": "Get Temp Session",
+                "operationId": "get-temp-session",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.TempAccount"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -279,6 +342,35 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.Attachments": {
+            "type": "object",
+            "properties": {
+                "contentType": {
+                    "type": "string"
+                },
+                "disposition": {
+                    "type": "string"
+                },
+                "downloadUrl": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "related": {
+                    "type": "boolean"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "transferEncoding": {
+                    "type": "string"
+                }
+            }
+        },
         "handler.DetailedMessage": {
             "type": "object",
             "properties": {
@@ -288,7 +380,7 @@ const docTemplate = `{
                 "attachments": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/handler.Attachments"
                     }
                 },
                 "bcc": {
@@ -360,12 +452,7 @@ const docTemplate = `{
                 "updatedAt": {
                     "type": "string"
                 },
-                "verifications": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
+                "verifications": {}
             }
         },
         "handler.Empty": {

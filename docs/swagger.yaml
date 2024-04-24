@@ -7,13 +7,32 @@ definitions:
       name:
         type: string
     type: object
+  handler.Attachments:
+    properties:
+      contentType:
+        type: string
+      disposition:
+        type: string
+      downloadUrl:
+        type: string
+      filename:
+        type: string
+      id:
+        type: string
+      related:
+        type: boolean
+      size:
+        type: integer
+      transferEncoding:
+        type: string
+    type: object
   handler.DetailedMessage:
     properties:
       accountId:
         type: string
       attachments:
         items:
-          type: string
+          $ref: '#/definitions/handler.Attachments'
         type: array
       bcc:
         items:
@@ -61,10 +80,7 @@ definitions:
         type: array
       updatedAt:
         type: string
-      verifications:
-        items:
-          type: string
-        type: array
+      verifications: {}
     type: object
   handler.Empty:
     type: object
@@ -243,6 +259,30 @@ paths:
       summary: Get Google Session
       tags:
       - Google
+  /temp/delete:
+    delete:
+      consumes:
+      - application/json
+      description: delete Temp Session
+      operationId: delete-temp-session
+      parameters:
+      - description: id
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.Empty'
+            type: array
+      summary: Delete Temp
+      tags:
+      - Temp
   /temp/message:
     get:
       consumes:
@@ -314,6 +354,24 @@ paths:
               $ref: '#/definitions/handler.TempAccount'
             type: array
       summary: RegTempAcc
+      tags:
+      - Temp
+  /temp/session:
+    get:
+      consumes:
+      - application/json
+      description: Get Temp Session
+      operationId: get-temp-session
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.TempAccount'
+            type: array
+      summary: Get Temp Session
       tags:
       - Temp
 swagger: "2.0"
