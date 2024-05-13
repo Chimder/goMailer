@@ -11,14 +11,12 @@ type Jwt struct {
 }
 
 var secretKey = []byte("your_secret_key")
+// var secretKey = []byte("secret_key")
 
 func Encrypt(payload interface{}) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
-	fmt.Println("CLAIM", claims)
 	claims["data"] = payload
-	fmt.Println("ONECLAIN", claims)
-	// claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
 
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {

@@ -8,3 +8,6 @@
 .env*.local
 .env*
 .env
+/tmp*
+tmp*
+.tmp

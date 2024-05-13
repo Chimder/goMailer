@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"goMailer/auth"
+	"goMailer/utils"
 	"io"
 	"log"
 	"net/http"
@@ -28,6 +29,10 @@ type TempAccount struct {
 }
 
 type TempHandler struct {
+}
+
+func NewTempHandler() *TempHandler {
+	return &TempHandler{}
 }
 
 type Addressee struct {
@@ -102,13 +107,14 @@ func (t *TempHandler) RegTempEmail(w http.ResponseWriter, r *http.Request) {
 
 	account, err := client.NewAccount()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 	log.Println("ACCTEMP", account)
 
 	encoded, err := auth.Encrypt(account)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
 		return
 	}
 
@@ -119,6 +125,7 @@ func (t *TempHandler) RegTempEmail(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().Add(1 * 24 * time.Hour),
 		HttpOnly: true,
 		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	http.SetCookie(w, cookie)
@@ -139,7 +146,8 @@ func (t *TempHandler) GetTempMessages(w http.ResponseWriter, r *http.Request) {
 	pageToken := r.URL.Query().Get("pageToken")
 	pageTokenInt, err := strconv.Atoi(pageToken)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 
 	ProviderId := r.URL.Query().Get("id")
@@ -148,27 +156,30 @@ func (t *TempHandler) GetTempMessages(w http.ResponseWriter, r *http.Request) {
 	var account *mailtm.Account
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 	err = auth.Decrypt(cookie.Value, &account)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 
 	client, err := mailtm.New()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 
 	messages, err := client.GetMessages(account, pageTokenInt)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(messages); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := utils.WriteJSON(w, 200, messages); err != nil {
+		utils.WriteError(w, 500, err)
+		return
 	}
 }
 
@@ -190,44 +201,51 @@ func (t *TempHandler) GetTempMessage(w http.ResponseWriter, r *http.Request) {
 	var account *mailtm.Account
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 	err = auth.Decrypt(cookie.Value, &account)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 
 	if account.Token == "" || messageId == "" {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 
 	url := fmt.Sprintf("https://api.mail.tm/messages/%s", messageId)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", account.Token))
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 
 	var response DetailedMessage
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := utils.WriteJSON(w, 200, response); err != nil {
+		utils.WriteError(w, 500, err)
+		return
 	}
 }
 
@@ -248,16 +266,21 @@ func (h *TempHandler) GetTempSession(w http.ResponseWriter, r *http.Request) {
 			var account TempAccount
 			err := auth.Decrypt(cookie.Value, &account)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				utils.WriteError(w, 500, err)
 				return
 			}
 			accounts = append(accounts, account)
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(accounts); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if len(accounts) == 0 {
+		utils.WriteError(w, 500, "No temp cookie")
+		return
+	}
+
+	if err := utils.WriteJSON(w, 200, accounts); err != nil {
+		utils.WriteError(w, 500, err)
+		return
 	}
 }
 
@@ -277,21 +300,25 @@ func (h *TempHandler) DeleteTempSession(w http.ResponseWriter, r *http.Request) 
 	var account *mailtm.Account
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 	err = auth.Decrypt(cookie.Value, &account)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 
 	client, err := mailtm.New()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 
 	err = client.DeleteAccount(account)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 
 	newcookie := &http.Cookie{

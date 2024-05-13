@@ -3,9 +3,9 @@ package handler
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"goMailer/auth"
 	"goMailer/config"
+	"goMailer/utils"
 	"log"
 	"net/http"
 	"regexp"
@@ -41,6 +41,10 @@ type GoogleAccount struct {
 type GoogleHandler struct {
 }
 
+func NewGoogleHandler() *GoogleHandler {
+	return &GoogleHandler{}
+}
+
 type MessageData struct {
 	MessageId       string
 	Subject         string
@@ -64,15 +68,16 @@ type MessageData struct {
 // @Router /google/reg [post]
 func (h *GoogleHandler) RegGoogleAcc(w http.ResponseWriter, r *http.Request) {
 	var newUser GoogleAccount
-	err := json.NewDecoder(r.Body).Decode(&newUser)
+	err := utils.ParseJSON(r, &newUser)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
 		return
 	}
+	defer r.Body.Close()
 
 	encoded, err := auth.Encrypt(newUser)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
 		return
 	}
 
@@ -83,6 +88,7 @@ func (h *GoogleHandler) RegGoogleAcc(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().Add(365 * 24 * time.Hour),
 		HttpOnly: true,
 		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	http.SetCookie(w, cookie)
@@ -102,10 +108,9 @@ func (h *GoogleHandler) DeleteGoogleCookie(w http.ResponseWriter, r *http.Reques
 	ProviderId := r.URL.Query().Get("id")
 	cookieName := "googleMailer_" + ProviderId
 
-	log.Println("Emaillll", cookieName)
 	_, err := r.Cookie(cookieName)
 	if err != nil {
-		http.Error(w, "Cookie not found", http.StatusNotFound)
+		utils.WriteError(w, 404, err)
 		return
 	}
 
@@ -116,6 +121,7 @@ func (h *GoogleHandler) DeleteGoogleCookie(w http.ResponseWriter, r *http.Reques
 		Expires:  time.Unix(0, 0),
 		HttpOnly: true,
 		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	http.SetCookie(w, cookie)
@@ -139,16 +145,16 @@ func (h *GoogleHandler) GetGoogleSession(w http.ResponseWriter, r *http.Request)
 			var account GoogleAccount
 			err := auth.Decrypt(cookie.Value, &account)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				// http.Error(w, err.Error(), http.StatusInternalServerError)
+				utils.WriteError(w, 500, err)
 				return
 			}
 			accounts = append(accounts, account)
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(accounts); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := utils.WriteJSON(w, 200, accounts); err != nil {
+		utils.WriteError(w, 500, err)
 	}
 }
 
@@ -170,11 +176,12 @@ func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Reques
 	var account GoogleAccount
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
+		return
 	}
 	err = auth.Decrypt(cookie.Value, &account)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
 		return
 	}
 
@@ -195,6 +202,7 @@ func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Reques
 	srv, err := gmail.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Gmail client: %v", err)
+		return
 	}
 
 	////////////////////////////////////////////////////
@@ -205,13 +213,16 @@ func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Reques
 	}
 	rr, err := call.Do()
 	if err != nil {
-		http.Error(w, "Unable to retrieve messages: "+err.Error(), http.StatusInternalServerError)
+		utils.WriteError(w, 500, err)
 		return
 	}
 
 	////////////////////////////////////////////////////////////////
-	var messages []*gmail.Message
-	var group sync.WaitGroup
+	var (
+		messages []*gmail.Message
+		group    sync.WaitGroup
+	)
+
 	for _, m := range rr.Messages {
 		group.Add(1)
 		go func(m *gmail.Message) {
@@ -226,6 +237,7 @@ func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Reques
 
 			if err != nil {
 				log.Printf("Error retrieving message %s: %v", m.Id, err)
+				return
 			}
 		}(m)
 	}
@@ -270,14 +282,13 @@ func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Reques
 		messagesData = append(messagesData, messageData)
 	}
 
-	log.Println("LEEEG", len(messagesData))
 	response := Response{
 		MessagesData:  messagesData,
 		NextPageToken: rr.NextPageToken,
 	}
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := utils.WriteJSON(w, 200, response); err != nil {
+		utils.WriteError(w, 500, err)
+		return
 	}
 }
 
