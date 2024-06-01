@@ -70,14 +70,14 @@ func (h *GoogleHandler) RegGoogleAcc(w http.ResponseWriter, r *http.Request) {
 	var newUser GoogleAccount
 	err := utils.ParseJSON(r, &newUser)
 	if err != nil {
-		utils.WriteError(w, 500, err)
+		utils.WriteError(w, 500, "RGA parse json", err)
 		return
 	}
 	defer r.Body.Close()
 
 	encoded, err := auth.Encrypt(newUser)
 	if err != nil {
-		utils.WriteError(w, 500, err)
+		utils.WriteError(w, 500, "RGA encrypt", err)
 		return
 	}
 
@@ -110,7 +110,7 @@ func (h *GoogleHandler) DeleteGoogleCookie(w http.ResponseWriter, r *http.Reques
 
 	_, err := r.Cookie(cookieName)
 	if err != nil {
-		utils.WriteError(w, 404, err)
+		utils.WriteError(w, 404, "DGC cookie", err)
 		return
 	}
 
@@ -146,7 +146,7 @@ func (h *GoogleHandler) GetGoogleSession(w http.ResponseWriter, r *http.Request)
 			err := auth.Decrypt(cookie.Value, &account)
 			if err != nil {
 				// http.Error(w, err.Error(), http.StatusInternalServerError)
-				utils.WriteError(w, 500, err)
+				utils.WriteError(w, 500, "GGS decrypt", err)
 				return
 			}
 			accounts = append(accounts, account)
@@ -154,7 +154,7 @@ func (h *GoogleHandler) GetGoogleSession(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := utils.WriteJSON(w, 200, accounts); err != nil {
-		utils.WriteError(w, 500, err)
+		utils.WriteError(w, 500, "GGS write js", err)
 	}
 }
 
@@ -176,12 +176,12 @@ func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Reques
 	var account GoogleAccount
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
-		utils.WriteError(w, 500, err)
+		utils.WriteError(w, 500, "MAC cookie", err)
 		return
 	}
 	err = auth.Decrypt(cookie.Value, &account)
 	if err != nil {
-		utils.WriteError(w, 500, err)
+		utils.WriteError(w, 500, "MAC decrypt", err)
 		return
 	}
 
@@ -213,7 +213,7 @@ func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Reques
 	}
 	rr, err := call.Do()
 	if err != nil {
-		utils.WriteError(w, 500, err)
+		utils.WriteError(w, 500, "MAC call do", err)
 		return
 	}
 
@@ -287,7 +287,7 @@ func (h *GoogleHandler) MessagesAndContent(w http.ResponseWriter, r *http.Reques
 		NextPageToken: rr.NextPageToken,
 	}
 	if err := utils.WriteJSON(w, 200, response); err != nil {
-		utils.WriteError(w, 500, err)
+		utils.WriteError(w, 500, "MAC write js", err)
 		return
 	}
 }

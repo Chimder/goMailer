@@ -11,7 +11,6 @@ type Jwt struct {
 }
 
 var secretKey = []byte("your_secret_key")
-// var secretKey = []byte("secret_key")
 
 func Encrypt(payload interface{}) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
